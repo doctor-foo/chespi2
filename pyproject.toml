@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chespi"
+version = "2.0.0"
+description = "CheSPI: chemical shift secondary structure population inference"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Jakob Toudahl Nielsen"},
+    {name = "Frans A A Mulder"},
+]
+keywords = ["NMR", "chemical shifts", "secondary structure", "protein"]
+dependencies = [
+    "pynmrstar>=3.3",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "pandas>=2.0",
+]
+
+[project.optional-dependencies]
+render = ["pymol-open-source"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+chespi = "chespi.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["chespi*"]
+
+[tool.setuptools.package-data]
+chespi = ["data/*"]
