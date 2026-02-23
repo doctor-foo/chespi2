@@ -1,47 +1,129 @@
 # CheSPI
 Chemical shift Secondary structure Population Inference
 
-Please find the publication here:
-CheSPI: chemical shift secondary structure population inference.
-Jakob Toudahl Nielsen and Frans A A Mulder, J. Biomol. NMR, 2021 Jul;75(6-7):273-291.
-
+**Publication:**
+Jakob Toudahl Nielsen and Frans A A Mulder,
+*CheSPI: chemical shift secondary structure population inference.*
+J. Biomol. NMR, 2021 Jul;75(6-7):273-291.
 https://doi.org/10.1007/s10858-021-00374-w
 
-1. Derives Principal components from chemical shifts to infer local structure and dynamics.
-2. Predicts secondary structure populations from chemical shifts.
-3. Predicts secondary structure DSSP 8-state classes from chemical shifts.
+## What it does
 
-python command-line application
+1. Derives principal components from backbone chemical shifts to infer local structure and dynamics (CheZOD Z-scores + CheSPI PCs).
+2. Predicts secondary structure populations (helix / sheet / turn / coil) from chemical shifts.
+3. Predicts secondary structure DSSP 8-state classes from chemical shifts using a genetic algorithm.
 
-usage (Windows): python_exe cheSPI4c.py ID [option] > logfile &
-usage (Linux/MacOS): python cheSPI4c.py ID [option] > logfile &
+## Installation
 
-Arguments for cheSPI:
+Requires Python ≥ 3.9. Install with [uv](https://github.com/astral-sh/uv) (recommended) or pip:
 
-ID specifies id for either (i) published BMRB id or (ii) a local provided NMR-STAR file id (version 2.1). For (i) the data will be downloaded automatically from the corresponding ftp site for the specified bmrid. For (ii) an NMR-STAR file (v2.1) must be placed in the running directory. The NMR-STAR file must contain chemical shifts and specify: “_Mol_residue_sequence", "assigned_chemical_shifts" and “sample_conditions” loop. When multiple conditions are part of the same NMR-STAR file only the first condition is used - to use any other condition, the user should make separate NMR-STAR files.
+```bash
+# with uv
+uv pip install .
 
-CheSPI will first generate the expected random coil chemical shifts by use of the calculator POTENCI, using the sequence and conditions, and then check whether the bmrb entry requires re-referencing. If the user wishes to suppress re-referencing this can be done by the [option] argument, which the program uses as minAIC criterion. The default value for minAIC = 5.0. Lowering this value with [option] will favour re-referencing even with small offset corrections, increasing it will disfavour re-referencing and only invoke it with high offsets. Setting minAIC very high, e.g. [option] = 999 will de facto disable re-referencing.
+# with pip
+pip install .
+```
 
-NB. In the special case that [option] = 2: CheSPI will plot a 2d plot or first two CheSPI components, rather than change minAIC.
+Optional PyMOL rendering support:
 
-Subsequently, CheSPI will attempt an ss8 prediction using inference from correspondence between CheSPI components (derived from secondary chemical shifts) and structure class as well as inference from primary sequences. CheSPI will provide such predictions even with a limited number of assigned chemical shifts. However, for segments without any assigned chemical shifts, the predictions will be solely based on the primary sequence, and will consequently be of lower confidence.
+```bash
+uv pip install ".[render]"
+```
 
+## Usage
 
-Output files:
-i) Secondary chemical shifts (SCSs), “shiftsID.txt”. Shift file has: residue number, residue type, atom type, assigned chemical shift, pentapeptide context, and SCS.
-ii) CheZOD Z-scores and CheSPI principal components: “zscoresID.txt”. Z-score output has the following columns: residue name, residue number, Z-score, and principal components 1-3
-iii) CheSPI colors: "colorsID.txt" with the following columns: residue number, hexstring, rgb integers in the final three columns
-iv) PyMol script for coloring residues with CheSPI colors: "colCheSPIID.txt"
-v) CheSPI secondary structure populations: "populationsID.txt" with columns: residue type, residues number, and populations for helix, sheet, and coil, respectively, in the three following columns
-vi) Probability for all 8-state DSSP secondary structure classes: "probs8_ID.txt" with columns: residue type, residue number, and probabilities for H/G/I/E/-/T/S/B in the eight following column corresponding to alpha-helix/3_10-helix/I-helix/sheet/none(extended or disordered)/turn/bend/bridge.
-vii) Probability for all 3-state DSSP secondary structure classes: "probs3_ID.txt" with columns: residue type, residue number, and probabilities for H/S/C in the three following column corresponding to helix/sheet/coil
-viii) Best prediction with maximum probability for 8-state DSSP secondary structure class: "max8_ID.txt" with columns: residue type, residue number, and DSSP 8-state label, estimated probability for the given maximum state, posterior probabilty (higher values implies more confident assignment)
-iv) Best prediction with maximum probability for 3-state DSSP secondary structure class: same as the above - but for 3-state secondary structure
-x) short summary of 8-class predictions. Each property is joined for all residues to the following single lines: residue numbering, amino acid sequence, confidence digit (higher values implies higher confidence), 8-class DSSP prediction
-xi) short summary of 3-class predictions. Same as the above but for 3-classes H/S/C for helix/sheet/coil
+```
+chespi INPUT [OPTIONS]
+```
 
-A plot windwow opens with 3 panels ##(change flag "-p" to "-n" to omit plot. In this case pylab and pyqt are not required).
-Panel 1: Bar plot with colored with derived CheSPI colors using CheZOD Z-scores for the bar heights.
-Panel 2: CheSPI secondary structure populations shown as accumulated bar-chart using red, blue, green and grey for helical, extended, turn and non-folded conformations, respectively.
-Panel 3: Derived probabilities of 8-state DSSP secondary structure classes shown as accumulated bar-chart using red, magenta, white, black, grey, green, cyan, and blue colors, respectively, for 8-classes labeled, H/G/I/S/-/T/B/E, respectively, corresponding to alpha-helix/3_10-helix/I-helix/bend/none(extended or disordered)/turn/bridge/sheet
-note that in cases of missing experimental chemical shifts, the secondary structure prediction will still be provided but based on the sequence alone.
+`INPUT` is either a **BMRB entry ID** (downloaded automatically) or a path to a local **NMR-STAR 3.1 file**.
+
+### Examples
+
+```bash
+# Full pipeline: POTENCI → CheZOD → CheSPI SS prediction
+chespi 19482
+
+# From a local NMR-STAR file
+chespi path/to/entry.str -o my_output/
+
+# POTENCI random-coil predictions only
+chespi 19482 --skip-chezod
+
+# CheZOD Z-scores + CheSPI components only (no SS prediction)
+chespi 19482 --skip-chespi
+
+# Write a PyMOL coloring script alongside the other outputs
+chespi 19482 --pdb 2b97.pdb --color-by chezod
+
+# Render a PNG via headless PyMOL (requires pymol-open-source)
+chespi 19482 --pdb 2b97.pdb --render
+
+# Legacy space-separated output format (backward compatible)
+chespi 19482 --fmt space
+
+# Add a 2D PC1 vs PC2 scatter panel to the plot
+chespi 19482 --plot-2d
+```
+
+### All options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-o / --output DIR` | `chespi_<ID>/` | Output directory |
+| `--skip-chezod` | off | Run POTENCI only |
+| `--skip-chespi` | off | Run POTENCI + CheZOD only |
+| `--min-aic FLOAT` | `5.0` | AIC threshold for re-referencing |
+| `--no-reref` | off | Disable re-referencing entirely |
+| `--pdb FILE` | — | PDB file for structure coloring |
+| `--color-by` | `chezod` | `chezod` / `pc1` / `pc2` / `pc3` |
+| `--render` | off | Ray-trace PNG via PyMOL |
+| `--no-plot` | off | Skip PDF plot |
+| `--plot-2d` | off | Add 2D PC1 vs PC2 scatter panel |
+| `--fmt` | `tsv` | Output format: `tsv` / `csv` / `space` |
+| `-v / --verbose` | off | Verbose output |
+
+## Output files
+
+All files are written to the output directory (default `chespi_<ID>/`).
+
+| File | Contents |
+|------|----------|
+| `shifts.txt` | Secondary chemical shifts (obs − POTENCI) |
+| `zscores.txt` | CheZOD Z-scores and CheSPI PC1/PC2/PC3 per residue |
+| `colors.txt` | CheSPI RGB colors per residue (hex + integer) |
+| `populations.txt` | 4-state populations: helix / turn / coil / strand |
+| `probs8.txt` | 8-state DSSP probabilities (H G I E - T S B) |
+| `probs3.txt` | 3-state probabilities (H S C) |
+| `max8.txt` | Best 8-state prediction with probability and posterior |
+| `max3.txt` | Best 3-state prediction with probability and posterior |
+| `summary8.txt` | One-liner: sequence / confidence string / 8-state prediction |
+| `summary3.txt` | One-liner: sequence / confidence string / 3-state prediction |
+| `cheSPIplot.pdf` | Multi-panel matplotlib figure |
+| `colCheSPI.pml` | PyMOL script for CheSPI structure coloring |
+| `structure_<ID>.png` | Ray-traced PNG (only with `--pdb --render`) |
+
+## Re-referencing
+
+CheSPI automatically detects and corrects systematic chemical shift referencing offsets using an AIC criterion. The default threshold (`--min-aic 5.0`) accepts corrections only when the statistical evidence is strong. Use `--no-reref` to disable this entirely.
+
+## Notes on chemical shift coverage
+
+CheSPI will provide secondary structure predictions even with limited chemical shift assignments. For residues with no assigned shifts the prediction falls back to sequence-based priors and will have lower confidence (reflected in the confidence digit in `summary8.txt` / `summary3.txt`).
+
+## Package structure
+
+```
+chespi/
+├── cli.py            # command-line entry point
+├── io.py             # NMR-STAR parsing (pynmrstar) + output writers
+├── potenci.py        # POTENCI random-coil shift prediction
+├── chezod.py         # CheZOD Z-scores + CheSPI PCs
+├── ga.py             # genetic algorithm base classes
+├── prediction.py     # 8-state / 3-state SS prediction (GA)
+├── visualization.py  # matplotlib plots + PyMOL coloring
+└── data/             # pre-computed tables (CSV / JSON / NPY)
+```
+
+The original monolithic scripts are preserved in `legacy/` for reference.
