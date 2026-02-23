@@ -127,3 +127,9 @@ chespi/
 ```
 
 The original monolithic scripts are preserved in `legacy/` for reference.
+
+```
+legacy/
+├── cheSPI4c.py                # original Python 2 / NMR-STAR 2.1 version
+└── chespi_for_nmrstar31.py   # Python 3 port with NMR-STAR 3.1 support
+```
