@@ -7,6 +7,19 @@ Jakob Toudahl Nielsen and Frans A A Mulder,
 J. Biomol. NMR, 2021 Jul;75(6-7):273-291.
 https://doi.org/10.1007/s10858-021-00374-w
 
+## Example output
+
+**BMRB 6624 / PDB 2BYE** — three-panel CheSPI plot (Z-score colors, SS populations, 8-state predictions):
+
+![CheSPI plot for BMRB 6624](docs/cheSPIplot_6624.png)
+
+**Structure colored by CheSPI** — PDB 2BYE rendered in PyMOL with per-residue CheSPI colors
+(blue = disordered / coil, red = structured / helical):
+
+![CheSPI colored structure 2BYE](docs/CheSPIcolored2BYE6624.png)
+
+---
+
 ## What it does
 
 1. Derives principal components from backbone chemical shifts to infer local structure and dynamics (CheZOD Z-scores + CheSPI PCs).
